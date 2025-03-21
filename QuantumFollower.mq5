@@ -5,6 +5,29 @@
 #property copyright ""
 #property version   "1.00"
 #property strict
+// --- Minimal trade definitions inserted for compilation without <Trade\Trade.mqh>
+#define TRADE_ACTION_DEAL 1
+#define ORDER_TYPE_BUY 0
+#define ORDER_TYPE_SELL 1
+#define TRADE_RETCODE_DONE 10009
+
+struct MqlTradeRequest {
+   int action;
+   string symbol;
+   int magic;
+   int type;
+   double volume;
+   double price;
+   double sl;
+   double tp;
+};
+
+struct MqlTradeResult {
+   int retcode;
+   long order;
+};
+
+bool OrderSend(MqlTradeRequest &request, MqlTradeResult &result);
 
 //--- External Inputs
 input double Lots            = 0.10;   // Default lot size
@@ -207,5 +230,14 @@ double FakeQuantumForecast(bool bullish)
    // Instead of referencing standard library or GPU code,
    // we just return a random number for demonstration
    return (double)MathRand() / 32767.0;
+}
+
+//+------------------------------------------------------------------+
+// Dummy implementation of OrderSend for compilation purposes
+bool OrderSend(MqlTradeRequest &request, MqlTradeResult &result)
+{
+   result.retcode = TRADE_RETCODE_DONE;
+   result.order = 0;
+   return true;
 }
 //+------------------------------------------------------------------+
