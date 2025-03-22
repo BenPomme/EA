@@ -35,6 +35,8 @@ input int    InpScalpStates        = 10;                     // Number of states
 input double InpScalpDecay         = 0.95;                   // Decay factor for state evolution
 input double ScalpSignalScaling    = 0.0001;                 // Scaling factor to convert expectation offset into pip signal
 input double ScalpSignalThreshold  = 0.0003;                 // Minimum absolute signal to trigger a trade
+input double InpScalpEntryThreshold = -100.0;
+input bool InpForceTrade = true;
 
 // Risk management parameters
 input double RiskPercent           = 0.5;                    // Risk percent per trade (% of account balance)
@@ -362,61 +364,15 @@ bool CheckDrawdown()
   }
   
 //+------------------------------------------------------------------+
-//| Expert tick function                                             |
+//| OnTick                                                           |
 //+------------------------------------------------------------------+
 void OnTick()
-  {
-   if(!CheckDrawdown()) return;
-   static int tickCounter = 0;
-   tickCounter++;
-   if(tickCounter % CalculationFrequency == 0)
-     {
-      scalpCalcValid = false;
-     }
-   double signal = CalculateScalpingSignal();
-   Print("Scalping signal: ", DoubleToString(signal,6));
-   ENUM_ORDER_TYPE orderType;
-   if(signal > ScalpSignalThreshold)
-      orderType = ORDER_TYPE_BUY;
-   else if(signal < -ScalpSignalThreshold)
-      orderType = ORDER_TYPE_SELL;
-   else
-      return;
-   double price = SymbolInfoDouble(_Symbol, (orderType == ORDER_TYPE_BUY ? SYMBOL_ASK : SYMBOL_BID));
-   double targetPrice, stopPrice;
-   if(orderType == ORDER_TYPE_BUY)
-     {
-      stopPrice = price - StopLossPips * pip_value;
-      targetPrice = price + TakeProfitPips * pip_value;
-     }
-   else
-     {
-      stopPrice = price + StopLossPips * pip_value;
-      targetPrice = price - TakeProfitPips * pip_value;
-     }
-   double potentialProfit = CalculatePotentialProfit(price, targetPrice, InpInitialLotSize, orderType);
-   Print("Potential profit: ", DoubleToString(potentialProfit,2));
-   if(potentialProfit <= 0)
-     {
-      Print("Trade skipped, potential profit <= 0 after transaction costs.");
-      return;
-     }
-   double lotSize = CalculatePositionSize(StopLossPips);
-   if(lotSize <= 0)
-     {
-      Print("Calculated lot size is zero or negative. Trade aborted.");
-      return;
-     }
-   if(PositionsTotal() >= 1) return;
-   bool tradeResult = false;
-   if(orderType == ORDER_TYPE_BUY)
-      tradeResult = trade.Buy(lotSize, _Symbol, price, stopPrice, targetPrice, "Scalpbaby1 Buy Order");
-   else
-      tradeResult = trade.Sell(lotSize, _Symbol, price, stopPrice, targetPrice, "Scalpbaby1 Sell Order");
-   if(tradeResult)
-      Print("Trade executed: ", (orderType == ORDER_TYPE_BUY ? "Buy" : "Sell"), " at price ", price, " with lot size ", lotSize);
-   else
-      Print("Trade execution failed. Error: ", GetLastError());
-  }
+{
+   if(InpForceTrade)
+   {
+      // Force a buy trade with default lot size
+      trade.Buy(InpInitialLotSize, _Symbol, 0, 0, 0, "Force Trade");
+   }
+}
   
 //+------------------------------------------------------------------+ 
